@@ -3,7 +3,6 @@ import { Registration, GalleryItem, ContactInfo, Course } from "@/types";
 import { galleryImages as defaultGallery } from "@/data/gallery";
 import { coursesData as defaultCourses } from "@/data/courses";
 
-// 3. إدارة معلومات التواصل - القيمة الافتراضية
 export const defaultContactInfo: ContactInfo = {
   address: "المقر الرئيسي",
   phone: "+000 000 000 000",
@@ -15,21 +14,29 @@ export const defaultContactInfo: ContactInfo = {
   telegramUrl: "",
 };
 
-// دوال مساعدة للتعامل مع ملفات JSON السحابية
 async function readBlobJson<T>(fileName: string, fallback: T): Promise<T> {
   try {
     const { blobs } = await list({ prefix: `data/${fileName}` });
-    if (!blobs || blobs.length === 0) return fallback;
+    if (!blobs || blobs.length === 0) {
+      console.log(`[STORAGE] No blob found for data/${fileName}, using fallback.`);
+      return fallback;
+    }
 
-    const latestBlob = blobs.sort(
-      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-    )[0];
+    const targetBlob = blobs[0];
+    const res = await fetch(`${targetBlob.url}?nocache=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    });
 
-    const res = await fetch(latestBlob.url, { cache: "no-store" });
-    if (!res.ok) return fallback;
-    return await res.json();
+    if (!res.ok) {
+      console.error(`[STORAGE] Failed to fetch blob url ${targetBlob.url}: status ${res.status}`);
+      return fallback;
+    }
+
+    const data = await res.json();
+    return data;
   } catch (error) {
-    console.error(`Error reading ${fileName} from blob:`, error);
+    console.error(`[STORAGE ERROR] reading ${fileName}:`, error);
     return fallback;
   }
 }
@@ -42,8 +49,9 @@ async function writeBlobJson<T>(fileName: string, data: T): Promise<void> {
       addRandomSuffix: false,
       contentType: "application/json",
     });
+    console.log(`[STORAGE SUCCESS] Saved data/${fileName}`);
   } catch (error) {
-    console.error(`Error saving ${fileName} to blob:`, error);
+    console.error(`[STORAGE ERROR] writing ${fileName}:`, error);
   }
 }
 
