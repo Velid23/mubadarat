@@ -7,7 +7,7 @@ export default function GalleryManager() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  
+
   const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
   const [formData, setFormData] = useState({ title: "", description: "", src: "" });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -15,7 +15,7 @@ export default function GalleryManager() {
   const fetchGallery = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/gallery");
+      const res = await fetch("/api/gallery", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setItems(data);
@@ -167,7 +167,7 @@ export default function GalleryManager() {
               </label>
               <input
                 type="text"
-                placeholder="/uploads/example.jpg"
+                placeholder="https://..."
                 value={formData.src}
                 onChange={(e) => setFormData({ ...formData, src: e.target.value })}
                 className="text-gray-700 w-full px-3 py-2 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-cyan-600 outline-none"
@@ -241,11 +241,12 @@ export default function GalleryManager() {
                 key={item.id || idx}
                 className="border border-stone-200 rounded-2xl overflow-hidden flex flex-col bg-stone-50"
               >
-                <div className="relative h-44 w-full bg-stone-200">
+                <div className="relative h-44 w-full bg-stone-200 overflow-hidden">
                   <img
                     src={item.src}
                     alt={item.title || "صورة"}
-                    className="object-cover"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
 
