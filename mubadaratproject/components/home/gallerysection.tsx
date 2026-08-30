@@ -47,9 +47,8 @@ export default function GallerySection() {
             className="group bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1.5"
           >
             <div className="relative h-72 w-full bg-stone-100 overflow-hidden">
-              <Image
+              <img
                 src={img.src}
-                fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 alt={img.title || "نشاط"}
               />
