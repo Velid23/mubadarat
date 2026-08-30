@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import { GalleryItem } from "@/types";
 
 export default function GalleryManager() {
@@ -243,10 +242,9 @@ export default function GalleryManager() {
                 className="border border-stone-200 rounded-2xl overflow-hidden flex flex-col bg-stone-50"
               >
                 <div className="relative h-44 w-full bg-stone-200">
-                  <Image
+                  <img
                     src={item.src}
                     alt={item.title || "صورة"}
-                    fill
                     className="object-cover"
                   />
                 </div>
