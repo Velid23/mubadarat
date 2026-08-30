@@ -1,8 +1,9 @@
-import { put, head } from "@vercel/blob";
+import { put, list } from "@vercel/blob";
 import { Registration, GalleryItem, ContactInfo, Course } from "@/types";
 import { galleryImages as defaultGallery } from "@/data/gallery";
 import { coursesData as defaultCourses } from "@/data/courses";
 
+// 3. إدارة معلومات التواصل - القيمة الافتراضية
 export const defaultContactInfo: ContactInfo = {
   address: "المقر الرئيسي",
   phone: "+000 000 000 000",
@@ -14,21 +15,25 @@ export const defaultContactInfo: ContactInfo = {
   telegramUrl: "",
 };
 
-// قراءة مباشرة وفورية باستخدام head والرابط المباشر
+// دوال مساعدة للتعامل مع ملفات JSON السحابية
 async function readBlobJson<T>(fileName: string, fallback: T): Promise<T> {
   try {
-    const blobDetails = await head(`data/${fileName}`);
-    if (!blobDetails || !blobDetails.url) return fallback;
+    const { blobs } = await list({ prefix: `data/${fileName}` });
+    if (!blobs || blobs.length === 0) return fallback;
 
-    const res = await fetch(`${blobDetails.url}?t=${Date.now()}`, { cache: "no-store" });
+    const latestBlob = blobs.sort(
+      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    )[0];
+
+    const res = await fetch(latestBlob.url, { cache: "no-store" });
     if (!res.ok) return fallback;
     return await res.json();
-  } catch {
+  } catch (error) {
+    console.error(`Error reading ${fileName} from blob:`, error);
     return fallback;
   }
 }
 
-// حفظ مباشر واستبدال لنفس المسار
 async function writeBlobJson<T>(fileName: string, data: T): Promise<void> {
   try {
     const jsonString = JSON.stringify(data, null, 2);
