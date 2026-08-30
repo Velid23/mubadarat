@@ -28,7 +28,7 @@ export default function GallerySection() {
 
   return (
   <section 
-  className="my-12 py-12 px-6 max-w-6xl mx-auto rounded-3xl border
+  className="my-12 py-12 px-6 max-w-4xl mx-auto rounded-3xl border
    border-stone-200/80 bg-white/90 backdrop-blur-xs shadow-sm font-sans" 
   dir="rtl">
 

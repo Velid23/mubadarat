@@ -1,8 +1,7 @@
 export const dynamic = "force-dynamic";
 
+import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
-import path from "path";
-import fs from "fs";
 
 export async function POST(request: Request) {
   try {
@@ -10,26 +9,21 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File | null;
 
     if (!file || typeof file === "string") {
-      return NextResponse.json({ error: "لم يتم استلام أي ملف صورة" }, { status: 400 });
+      return NextResponse.json(
+        { error: "لم يتم استلام أي ملف صورة" },
+        { status: 400 }
+      );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const safeFileName = `uploads/${Date.now()}-${file.name || "image.jpg"}`;
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    // الرفع المباشر إلى Vercel Blob
+    const blob = await put(safeFileName, file, {
+      access: "public",
+    });
 
-    const originalName = file.name || "image.jpg";
-    const extension = path.extname(originalName) || ".jpg";
-    const safeFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
-    const filePath = path.join(uploadDir, safeFileName);
-
-    fs.writeFileSync(filePath, buffer);
-
-    const webUrl = `/uploads/${safeFileName}`;
-    return NextResponse.json({ url: webUrl }, { status: 201 });
+    // إرجاع الرابط السحابي المباشر
+    return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (error: any) {
     console.error("Upload API Error:", error);
     return NextResponse.json(
