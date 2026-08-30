@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { getRegistrations, saveRegistrations } from "@/lib/storage";
 import { Registration } from "@/types";
@@ -5,13 +7,16 @@ import { Registration } from "@/types";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, phone, program, notes } = body;
+    const { name, phone, email, courseTitle, notes } = body;
 
     if (!name || !phone) {
-      return NextResponse.json({ error: "البيانات غير مكتملة" }, { status: 400 });
+      return NextResponse.json(
+        { error: "الاسم ورقم الهاتف مطلوبان" },
+        { status: 400 }
+      );
     }
 
-    const newEntry: Registration = {
+    const newRegistration: Registration = {
       id: Date.now(),
       name,
       phone,
@@ -19,13 +24,20 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    const currentData = getRegistrations();
-    currentData.push(newEntry);
-    saveRegistrations(currentData);
+    // إضافة await هنا لحل المشكلة
+    const registrations = await getRegistrations();
+    registrations.push(newRegistration);
+    await saveRegistrations(registrations);
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    return NextResponse.json(
+      { success: true, message: "تم تسجيل طلبك بنجاح" },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error("Register Error:", error);
-    return NextResponse.json({ error: "فشل حفظ البيانات" }, { status: 500 });
+    console.error("Register API Error:", error);
+    return NextResponse.json(
+      { error: "فشل إرسال الطلب، يرجى المحاولة لاحقاً" },
+      { status: 500 }
+    );
   }
 }
