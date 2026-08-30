@@ -6,7 +6,7 @@ import { Course } from "@/types";
 
 export async function GET() {
   try {
-    const courses = getCourses();
+    const courses = await getCourses();
     return NextResponse.json(courses);
   } catch (error) {
     return NextResponse.json({ error: "فشل جلب الدورات" }, { status: 500 });
@@ -35,9 +35,9 @@ export async function POST(request: Request) {
       registrationLink: registrationLink || "",
     };
 
-    const courses = getCourses();
+    const courses = await getCourses();
     courses.push(newCourse);
-    saveCourses(courses);
+    await saveCourses(courses);
 
     return NextResponse.json(newCourse, { status: 201 });
   } catch (error) {
@@ -54,7 +54,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "معرف الدورة مطلوب" }, { status: 400 });
     }
 
-    const courses = getCourses();
+    const courses = await getCourses();
     const index = courses.findIndex((c) => c.id === id);
 
     if (index === -1) {
@@ -68,7 +68,7 @@ export async function PUT(request: Request) {
       features: Array.isArray(body.features) ? body.features : [body.features],
     };
 
-    saveCourses(courses);
+    await saveCourses(courses);
     return NextResponse.json(courses[index]);
   } catch (error) {
     return NextResponse.json({ error: "فشل تحديث الدورة" }, { status: 500 });
@@ -84,9 +84,9 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "معرف الدورة مطلوب" }, { status: 400 });
     }
 
-    const courses = getCourses();
+    const courses = await getCourses();
     const filtered = courses.filter((c) => c.id !== id);
-    saveCourses(filtered);
+    await saveCourses(filtered);
 
     return NextResponse.json({ success: true, message: "تم حذف الدورة بنجاح" });
   } catch (error) {

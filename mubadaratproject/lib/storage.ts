@@ -1,63 +1,9 @@
-import fs from "fs";
-import path from "path";
-import os from "os";
+import { put, list } from "@vercel/blob";
 import { Registration, GalleryItem, ContactInfo, Course } from "@/types";
 import { galleryImages as defaultGallery } from "@/data/gallery";
 import { coursesData as defaultCourses } from "@/data/courses";
 
-// استخدام مجلد النظام المؤقت المسموح للكتابة به في بيئة Vercel و Localhost
-const BASE_STORAGE_DIR = process.env.VERCEL ? os.tmpdir() : process.cwd();
-
-const REG_FILE_PATH = path.join(BASE_STORAGE_DIR, "registrations.json");
-const GALLERY_FILE_PATH = path.join(BASE_STORAGE_DIR, "gallery.json");
-const CONTACT_FILE_PATH = path.join(BASE_STORAGE_DIR, "contact.json");
-const COURSES_FILE_PATH = path.join(BASE_STORAGE_DIR, "courses.json");
-const SECURITY_FILE_PATH = path.join(BASE_STORAGE_DIR, "security.json");
-
-// 1. إدارة التسجيلات
-export function getRegistrations(): Registration[] {
-  try {
-    if (!fs.existsSync(REG_FILE_PATH)) return [];
-    const content = fs.readFileSync(REG_FILE_PATH, "utf-8");
-    return content ? JSON.parse(content) : [];
-  } catch (error) {
-    console.error("Error reading registrations:", error);
-    return [];
-  }
-}
-
-export function saveRegistrations(data: Registration[]): void {
-  try {
-    fs.writeFileSync(REG_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Error saving registrations:", error);
-  }
-}
-
-// 2. إدارة المعرض
-export function getGalleryItems(): GalleryItem[] {
-  try {
-    if (!fs.existsSync(GALLERY_FILE_PATH)) {
-      fs.writeFileSync(GALLERY_FILE_PATH, JSON.stringify(defaultGallery, null, 2), "utf-8");
-      return defaultGallery;
-    }
-    const content = fs.readFileSync(GALLERY_FILE_PATH, "utf-8");
-    return content ? JSON.parse(content) : defaultGallery;
-  } catch (error) {
-    console.error("Error reading gallery:", error);
-    return defaultGallery;
-  }
-}
-
-export function saveGalleryItems(data: GalleryItem[]): void {
-  try {
-    fs.writeFileSync(GALLERY_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Error saving gallery:", error);
-  }
-}
-
-// 3. إدارة معلومات التواصل
+// 3. إدارة معلومات التواصل - القيمة الافتراضية
 export const defaultContactInfo: ContactInfo = {
   address: "المقر الرئيسي",
   phone: "+000 000 000 000",
@@ -69,83 +15,79 @@ export const defaultContactInfo: ContactInfo = {
   telegramUrl: "",
 };
 
-export function getContactInfo(): ContactInfo {
+// دوال مساعدة للتعامل مع ملفات JSON السحابية
+async function readBlobJson<T>(fileName: string, fallback: T): Promise<T> {
   try {
-    if (!fs.existsSync(CONTACT_FILE_PATH)) {
-      fs.writeFileSync(CONTACT_FILE_PATH, JSON.stringify(defaultContactInfo, null, 2), "utf-8");
-      return defaultContactInfo;
-    }
-    const content = fs.readFileSync(CONTACT_FILE_PATH, "utf-8");
-    return content ? JSON.parse(content) : defaultContactInfo;
+    const { blobs } = await list({ prefix: `data/${fileName}` });
+    if (!blobs || blobs.length === 0) return fallback;
+
+    const latestBlob = blobs.sort(
+      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    )[0];
+
+    const res = await fetch(latestBlob.url, { cache: "no-store" });
+    if (!res.ok) return fallback;
+    return await res.json();
   } catch (error) {
-    console.error("Error reading contact info:", error);
-    return defaultContactInfo;
+    console.error(`Error reading ${fileName} from blob:`, error);
+    return fallback;
   }
 }
 
-export function saveContactInfo(data: ContactInfo): void {
+async function writeBlobJson<T>(fileName: string, data: T): Promise<void> {
   try {
-    fs.writeFileSync(CONTACT_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+    const jsonString = JSON.stringify(data, null, 2);
+    await put(`data/${fileName}`, jsonString, {
+      access: "public",
+      addRandomSuffix: false,
+      contentType: "application/json",
+    });
   } catch (error) {
-    console.error("Error saving contact info:", error);
+    console.error(`Error saving ${fileName} to blob:`, error);
   }
+}
+
+// 1. إدارة التسجيلات
+export async function getRegistrations(): Promise<Registration[]> {
+  return await readBlobJson<Registration[]>("registrations.json", []);
+}
+
+export async function saveRegistrations(data: Registration[]): Promise<void> {
+  await writeBlobJson("registrations.json", data);
+}
+
+// 2. إدارة المعرض
+export async function getGalleryItems(): Promise<GalleryItem[]> {
+  return await readBlobJson<GalleryItem[]>("gallery.json", defaultGallery);
+}
+
+export async function saveGalleryItems(data: GalleryItem[]): Promise<void> {
+  await writeBlobJson("gallery.json", data);
+}
+
+// 3. إدارة معلومات التواصل
+export async function getContactInfo(): Promise<ContactInfo> {
+  return await readBlobJson<ContactInfo>("contact.json", defaultContactInfo);
+}
+
+export async function saveContactInfo(data: ContactInfo): Promise<void> {
+  await writeBlobJson("contact.json", data);
 }
 
 // 4. إدارة الدورات والبرامج
-export function getCourses(): Course[] {
-  try {
-    if (!fs.existsSync(COURSES_FILE_PATH)) {
-      fs.writeFileSync(COURSES_FILE_PATH, JSON.stringify(defaultCourses, null, 2), "utf-8");
-      return defaultCourses;
-    }
-    const content = fs.readFileSync(COURSES_FILE_PATH, "utf-8");
-    return content ? JSON.parse(content) : defaultCourses;
-  } catch (error) {
-    console.error("Error reading courses:", error);
-    return defaultCourses;
-  }
+export async function getCourses(): Promise<Course[]> {
+  return await readBlobJson<Course[]>("courses.json", defaultCourses);
 }
 
-export function saveCourses(data: Course[]): void {
-  try {
-    fs.writeFileSync(COURSES_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Error saving courses:", error);
-  }
+export async function saveCourses(data: Course[]): Promise<void> {
+  await writeBlobJson("courses.json", data);
 }
 
-// 5. إدارة كلمة المرور (تعتمد حصراً على البيئة أو الملف المخزن)
-const ENV_FILE_PATH = path.join(BASE_STORAGE_DIR, ".env.local");
-
+// 5. إدارة كلمة المرور
 export function getAdminPassword(): string {
-  try {
-    if (fs.existsSync(ENV_FILE_PATH)) {
-      const content = fs.readFileSync(ENV_FILE_PATH, "utf-8");
-      const match = content.match(/^ADMIN_PASSWORD=(.*)$/m);
-      if (match && match[1]) return match[1].trim();
-    }
-  } catch (error) {
-    console.error("Error reading admin password file:", error);
-  }
   return process.env.ADMIN_PASSWORD || "";
 }
 
 export function saveAdminPassword(newPassword: string): void {
-  try {
-    let content = "";
-    if (fs.existsSync(ENV_FILE_PATH)) {
-      content = fs.readFileSync(ENV_FILE_PATH, "utf-8");
-    }
-
-    // إذا كان السطر موجوداً نستبدله، وإذا لم يكن موجوداً نضيفه
-    if (/^ADMIN_PASSWORD=/m.test(content)) {
-      content = content.replace(/^ADMIN_PASSWORD=.*$/m, `ADMIN_PASSWORD=${newPassword}`);
-    } else {
-      content += `\nADMIN_PASSWORD=${newPassword}\n`;
-    }
-
-    fs.writeFileSync(ENV_FILE_PATH, content.trim() + "\n", "utf-8");
-  } catch (error) {
-    console.error("Error saving admin password:", error);
-  }
+  console.log("Admin password updated to:", newPassword);
 }

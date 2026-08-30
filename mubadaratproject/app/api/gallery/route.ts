@@ -6,7 +6,7 @@ import { GalleryItem } from "@/types";
 
 export async function GET() {
   try {
-    const items = getGalleryItems();
+    const items = await getGalleryItems();
     return NextResponse.json(items);
   } catch (error: any) {
     return NextResponse.json({ error: "فشل جلب المعرض" }, { status: 500 });
@@ -30,9 +30,9 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    const items = getGalleryItems();
+    const items = await getGalleryItems();
     items.unshift(newItem);
-    saveGalleryItems(items);
+    await saveGalleryItems(items);
 
     return NextResponse.json(newItem, { status: 201 });
   } catch (error: any) {
@@ -50,7 +50,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "معرف الصورة مطلوب" }, { status: 400 });
     }
 
-    const items = getGalleryItems();
+    const items = await getGalleryItems();
     const index = items.findIndex((i) => i.id === id);
 
     if (index === -1) {
@@ -64,7 +64,7 @@ export async function PUT(request: Request) {
       src: src || items[index].src,
     };
 
-    saveGalleryItems(items);
+    await saveGalleryItems(items);
     return NextResponse.json(items[index]);
   } catch (error: any) {
     console.error("Gallery PUT Error:", error);
@@ -81,13 +81,13 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "معرف الصورة مطلوب" }, { status: 400 });
     }
 
-    const items = getGalleryItems();
+    const items = await getGalleryItems();
     const filtered = items.filter((i) => i.id !== id);
-    saveGalleryItems(filtered);
+    await saveGalleryItems(filtered);
 
     return NextResponse.json({ success: true, message: "تم حذف الصورة بنجاح" });
   } catch (error: any) {
     console.error("Gallery DELETE Error:", error);
     return NextResponse.json({ error: "فشل حذف الصورة" }, { status: 500 });
   }
-}   
+}

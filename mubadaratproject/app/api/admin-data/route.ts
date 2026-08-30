@@ -5,7 +5,7 @@ import { getRegistrations, saveRegistrations } from "@/lib/storage";
 
 export async function GET() {
   try {
-    const data = getRegistrations();
+    const data = await getRegistrations();
     return NextResponse.json(data);
   } catch {
     return NextResponse.json({ error: "فشل جلب البيانات" }, { status: 500 });
@@ -21,9 +21,9 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "معرف الطلب مطلوب" }, { status: 400 });
     }
 
-    const currentData = getRegistrations();
+    const currentData = await getRegistrations();
     const filteredData = currentData.filter((item) => item.id.toString() !== id);
-    saveRegistrations(filteredData);
+    await saveRegistrations(filteredData);
 
     return NextResponse.json({ success: true, message: "تم الحذف بنجاح" });
   } catch {
