@@ -8,14 +8,15 @@ export default function GallerySection() {
   const [facebookUrl, setFacebookUrl] = useState("");
 
   useEffect(() => {
-    fetch("/api/gallery")
+    // جلب أحدث البيانات بدون كاش
+    fetch("/api/gallery", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setGallery(data);
       })
       .catch(console.error);
 
-    fetch("/api/contact")
+    fetch("/api/contact", { cache: "no-store" })
       .then((res) => res.json())
       .then((data: ContactInfo) => {
         if (data && data.facebookUrl) setFacebookUrl(data.facebookUrl);
@@ -26,11 +27,10 @@ export default function GallerySection() {
   if (gallery.length === 0) return null;
 
   return (
-  <section 
-  className="my-12 py-12 px-6 max-w-4xl mx-auto rounded-3xl border
-   border-stone-200/80 bg-white/90 backdrop-blur-xs shadow-sm font-sans" 
-  dir="rtl">
-
+    <section 
+      className="my-12 py-12 px-6 max-w-4xl mx-auto rounded-3xl border border-stone-200/80 bg-white/90 backdrop-blur-xs shadow-sm font-sans" 
+      dir="rtl"
+    >
       <div className="text-center mb-12 space-y-2">
         <span className="text-xs font-semibold text-cyan-700 bg-cyan-50 py-1 px-3 rounded-full">
           توثيق مستمر
@@ -48,8 +48,9 @@ export default function GallerySection() {
             <div className="relative h-72 w-full bg-stone-100 overflow-hidden">
               <img
                 src={img.src}
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 alt={img.title || "نشاط"}
+                loading="lazy"
               />
             </div>
             {(img.title || img.description) && (
